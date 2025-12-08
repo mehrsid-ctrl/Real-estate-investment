@@ -1,5 +1,3 @@
-%%writefile streamlit_app.py
-# -------------------------------
 # STREAMLIT APP — REAL ESTATE ADVISOR
 # -------------------------------
 import streamlit as st
