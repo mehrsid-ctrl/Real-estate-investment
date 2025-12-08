@@ -1,29 +1,21 @@
-# streamlit_app.py — Real Estate Investment Advisor
-
+# STREAMLIT APP — REAL ESTATE ADVISOR
+# -------------------------------
 import streamlit as st
 import pandas as pd
-import numpy as np
-import joblib
 from catboost import CatBoostRegressor, CatBoostClassifier
 
 st.set_page_config(page_title="🏠 Real Estate Investment Advisor", layout="centered")
 st.title("🏠 Real Estate Investment Advisor")
 
 # -------------------------------
-# Load models and preprocessor
+# Load models
 # -------------------------------
-MODEL_PATH = "models/"
 try:
     reg = CatBoostRegressor()
     clf = CatBoostClassifier()
-    reg.load_model(f"{MODEL_PATH}reg_model.cbm")
-    clf.load_model(f"{MODEL_PATH}clf_model.cbm")
-
-    preproc_data = joblib.load(f"{MODEL_PATH}preprocessor.pkl")
-    cat_cols = preproc_data['cat_cols']
-    num_cols = preproc_data['num_cols']
-
-    st.success("✅ Models and preprocessor loaded successfully!")
+    reg.load_model("reg_model.cbm")
+    clf.load_model("clf_model.cbm")
+    st.success("✅ Models loaded successfully!")
 except Exception as e:
     st.error(f"Failed to load models: {e}")
     st.stop()
@@ -32,6 +24,7 @@ except Exception as e:
 # User input
 # -------------------------------
 st.subheader("Property Information")
+
 price = st.number_input("Current Price (Lakhs)", min_value=1.0, max_value=100000.0, value=50.0)
 size = st.number_input("Size (sq ft)", min_value=100, max_value=20000, value=1000)
 bhk = st.number_input("BHK", min_value=1, max_value=10, value=2)
@@ -67,18 +60,16 @@ input_df = pd.DataFrame([{
     "City": city,
     "Locality": locality,
     # Derived features
-    "Price_per_SqFt": (price*100000)/size,
-    "Age_of_Property": 5,
+    "Price_per_SqFt": (price*100000)/max(size,1),
+    "Age_of_Property": 5,  # placeholder
     "Price_per_BHK": price / max(bhk, 1)
 }])
 
-# Convert categorical columns to string
+# Convert categorical columns to string (for CatBoost)
+cat_cols = ["Furnished_Status","Property_Type","Facing","Owner_Type",
+            "Availability_Status","State","City","Locality"]
 for col in cat_cols:
     input_df[col] = input_df[col].astype(str)
-    # Replace unseen categories with 'Unknown'
-    known_cats = preproc_data['preprocessor'].categories_[cat_cols.index(col)]
-    if input_df[col][0] not in known_cats:
-        input_df[col] = "Unknown"
 
 # -------------------------------
 # Predictions
