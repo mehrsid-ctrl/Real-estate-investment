@@ -3,34 +3,28 @@
 import streamlit as st
 import pandas as pd
 from catboost import CatBoostRegressor, CatBoostClassifier
+import joblib
+import os
 
 st.title("🏠 Real Estate Investment Advisor")
 
 # -------------------------------
-# Load models
+# Load models and category mapping
 # -------------------------------
 try:
     reg = CatBoostRegressor()
-    reg.load_model("reg_model.cbm")
-    
     clf = CatBoostClassifier()
-    clf.load_model("clf_model.cbm")
     
-    st.success("✅ Models loaded successfully!")
+    reg.load_model("models/reg_model.cbm")
+    clf.load_model("models/clf_model.cbm")
+    
+    # Load categorical mapping
+    cat_mapping = joblib.load("models/cat_mapping.pkl")
+    
+    st.success("✅ Models and category mapping loaded successfully!")
 except Exception as e:
-    st.error(f"Failed to load models: {e}")
+    st.error(f"Failed to load models or mapping: {e}")
     st.stop()
-
-# -------------------------------
-# Allowed categorical values (from training)
-# -------------------------------
-allowed_values = {
-    "Furnished_Status": ["Unfurnished", "Semi", "Fully", "Unknown"],
-    "Property_Type": ["Apartment", "House", "Villa", "Unknown"],
-    "Facing": ["North", "South", "East", "West", "Unknown"],
-    "Owner_Type": ["Builder", "Agent", "Individual", "Unknown"],
-    "Availability_Status": ["Available", "Sold", "Under Construction", "Unknown"],
-}
 
 # -------------------------------
 # User input
@@ -43,11 +37,11 @@ schools = st.number_input("Nearby Schools", min_value=0, max_value=20, value=2)
 hosp = st.number_input("Nearby Hospitals", min_value=0, max_value=20, value=1)
 pt = st.slider("Transport Accessibility", min_value=1, max_value=10, value=5)
 
-furn = st.selectbox("Furnished Status", allowed_values["Furnished_Status"])
-ptype = st.selectbox("Property Type", allowed_values["Property_Type"])
-face = st.selectbox("Facing", allowed_values["Facing"])
-owner = st.selectbox("Owner Type", allowed_values["Owner_Type"])
-av = st.selectbox("Availability Status", allowed_values["Availability_Status"])
+furn = st.selectbox("Furnished Status", ["Unfurnished", "Semi", "Fully", "Unknown"])
+ptype = st.selectbox("Property Type", ["Apartment", "House", "Villa", "Unknown"])
+face = st.selectbox("Facing", ["North", "South", "East", "West", "Unknown"])
+owner = st.selectbox("Owner Type", ["Builder", "Agent", "Individual", "Unknown"])
+av = st.selectbox("Availability Status", ["Available", "Sold", "Under Construction", "Unknown"])
 state = st.text_input("State", "Unknown")
 city = st.text_input("City", "Unknown")
 locality = st.text_input("Locality", "Unknown")
@@ -77,13 +71,10 @@ input_df = pd.DataFrame([{
 }])
 
 # -------------------------------
-# Safe categorical mapping
+# Fix categorical inputs to match trained categories
 # -------------------------------
-def safe_cat(value, allowed_list):
-    return value if value in allowed_list else allowed_list[0]
-
-for col, allowed in allowed_values.items():
-    input_df[col] = input_df[col].apply(lambda x: safe_cat(x, allowed))
+for col in cat_mapping:
+    input_df[col] = input_df[col].apply(lambda x: x if x in cat_mapping[col] else cat_mapping[col][0])
     input_df[col] = input_df[col].astype(str)
 
 # -------------------------------
@@ -92,7 +83,7 @@ for col, allowed in allowed_values.items():
 try:
     future_price = reg.predict(input_df)[0]
     good_investment = clf.predict(input_df)[0]
-    
+
     st.subheader("Predictions")
     st.success(f"Estimated Price in 5 years: {future_price:.2f} Lakhs")
     st.info(f"Good Investment? {'YES ✅' if good_investment==1 else 'NO ❌'}")
