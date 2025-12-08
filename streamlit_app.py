@@ -1,20 +1,20 @@
-# STREAMLIT APP — REAL ESTATE ADVISOR
-# -------------------------------
+# streamlit_app.py
 import streamlit as st
 import pandas as pd
 from catboost import CatBoostRegressor, CatBoostClassifier
+import joblib
 
-st.set_page_config(page_title="🏠 Real Estate Investment Advisor", layout="centered")
 st.title("🏠 Real Estate Investment Advisor")
 
 # -------------------------------
-# Load models
+# Load models from repo folder
 # -------------------------------
 try:
     reg = CatBoostRegressor()
     clf = CatBoostClassifier()
-    reg.load_model("reg_model.cbm")
-    clf.load_model("clf_model.cbm")
+    reg.load_model("models/reg_model.cbm")
+    clf.load_model("models/clf_model.cbm")
+    preprocessor = joblib.load("models/preprocessor.pkl")
     st.success("✅ Models loaded successfully!")
 except Exception as e:
     st.error(f"Failed to load models: {e}")
@@ -24,7 +24,6 @@ except Exception as e:
 # User input
 # -------------------------------
 st.subheader("Property Information")
-
 price = st.number_input("Current Price (Lakhs)", min_value=1.0, max_value=100000.0, value=50.0)
 size = st.number_input("Size (sq ft)", min_value=100, max_value=20000, value=1000)
 bhk = st.number_input("BHK", min_value=1, max_value=10, value=2)
@@ -59,16 +58,26 @@ input_df = pd.DataFrame([{
     "State": state,
     "City": city,
     "Locality": locality,
-    # Derived features
-    "Price_per_SqFt": (price*100000)/max(size,1),
-    "Age_of_Property": 5,  # placeholder
+    "Price_per_SqFt": (price*100000)/size,
+    "Age_of_Property": 5,
     "Price_per_BHK": price / max(bhk, 1)
 }])
 
-# Convert categorical columns to string (for CatBoost)
-cat_cols = ["Furnished_Status","Property_Type","Facing","Owner_Type",
-            "Availability_Status","State","City","Locality"]
+# -------------------------------
+# Ensure categorical values match training
+# -------------------------------
+cat_cols = ["Furnished_Status","Property_Type","Facing","Owner_Type","Availability_Status",
+            "State","City","Locality"]
+
+# Map unseen categories to "Unknown"
+valid_values = {
+    col: preprocessor[col] if col in preprocessor else None
+    for col in cat_cols
+}
+
 for col in cat_cols:
+    if valid_values[col] is not None and input_df[col][0] not in valid_values[col]:
+        input_df[col][0] = "Unknown"
     input_df[col] = input_df[col].astype(str)
 
 # -------------------------------
@@ -81,6 +90,5 @@ try:
     st.subheader("Predictions")
     st.success(f"Estimated Price in 5 years: {future_price:.2f} Lakhs")
     st.info(f"Good Investment? {'YES ✅' if good_investment==1 else 'NO ❌'}")
-
 except Exception as e:
     st.error(f"Prediction failed: {e}")
