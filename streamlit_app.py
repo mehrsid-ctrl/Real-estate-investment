@@ -1,13 +1,14 @@
 # streamlit_app.py
+# -------------------------------
 import streamlit as st
 import pandas as pd
 from catboost import CatBoostRegressor, CatBoostClassifier
 
-st.set_page_config(page_title="🏠 Real Estate Investment Advisor", layout="wide")
+st.set_page_config(page_title="🏠 Real Estate Investment Advisor", layout="centered")
 st.title("🏠 Real Estate Investment Advisor")
 
 # -------------------------------
-# Load models from repo folder
+# Load models directly from repo
 # -------------------------------
 MODEL_PATH_REG = "models/reg_model.cbm"
 MODEL_PATH_CLF = "models/clf_model.cbm"
@@ -15,9 +16,12 @@ MODEL_PATH_CLF = "models/clf_model.cbm"
 try:
     reg = CatBoostRegressor()
     reg.load_model(MODEL_PATH_REG)
+
     clf = CatBoostClassifier()
     clf.load_model(MODEL_PATH_CLF)
+
     st.success("✅ Models loaded successfully!")
+
 except Exception as e:
     st.error(f"Failed to load models: {e}")
     st.stop()
@@ -27,24 +31,21 @@ except Exception as e:
 # -------------------------------
 st.subheader("Property Information")
 
-col1, col2, col3 = st.columns(3)
-with col1:
-    price = st.number_input("Current Price (Lakhs)", 1.0, 100000.0, 50.0)
-    size = st.number_input("Size (sq ft)", 100, 20000, 1000)
-    bhk = st.number_input("BHK", 1, 10, 2)
-    schools = st.number_input("Nearby Schools", 0, 20, 2)
-with col2:
-    hosp = st.number_input("Nearby Hospitals", 0, 20, 1)
-    pt = st.slider("Transport Accessibility", 1, 10, 5)
-    furn = st.selectbox("Furnished Status", ["Unfurnished", "Semi", "Fully", "Unknown"])
-    ptype = st.selectbox("Property Type", ["Apartment", "House", "Villa", "Unknown"])
-with col3:
-    face = st.selectbox("Facing", ["North", "South", "East", "West", "Unknown"])
-    owner = st.selectbox("Owner Type", ["Builder", "Agent", "Individual", "Unknown"])
-    av = st.selectbox("Availability Status", ["Available", "Sold", "Under Construction", "Unknown"])
-    state = st.text_input("State", "Unknown")
-    city = st.text_input("City", "Unknown")
-    locality = st.text_input("Locality", "Unknown")
+price = st.number_input("Current Price (Lakhs)", min_value=1.0, max_value=100000.0, value=50.0)
+size = st.number_input("Size (sq ft)", min_value=100, max_value=20000, value=1000)
+bhk = st.number_input("BHK", min_value=1, max_value=10, value=2)
+schools = st.number_input("Nearby Schools", min_value=0, max_value=20, value=2)
+hosp = st.number_input("Nearby Hospitals", min_value=0, max_value=20, value=1)
+pt = st.slider("Transport Accessibility", min_value=1, max_value=10, value=5)
+
+furn = st.selectbox("Furnished Status", ["Unfurnished", "Semi", "Fully", "Unknown"])
+ptype = st.selectbox("Property Type", ["Apartment", "House", "Villa", "Unknown"])
+face = st.selectbox("Facing", ["North", "South", "East", "West", "Unknown"])
+owner = st.selectbox("Owner Type", ["Builder", "Agent", "Individual", "Unknown"])
+av = st.selectbox("Availability Status", ["Available", "Sold", "Under Construction", "Unknown"])
+state = st.text_input("State", "Unknown")
+city = st.text_input("City", "Unknown")
+locality = st.text_input("Locality", "Unknown")
 
 # -------------------------------
 # Prepare input dataframe
@@ -64,6 +65,7 @@ input_df = pd.DataFrame([{
     "State": state,
     "City": city,
     "Locality": locality,
+    # Derived features
     "Price_per_SqFt": (price*100000)/size,
     "Age_of_Property": 5,  # placeholder
     "Price_per_BHK": price / max(bhk, 1)
@@ -76,20 +78,11 @@ for col in cat_cols:
     input_df[col] = input_df[col].astype(str)
 
 # -------------------------------
-# Show user input
-# -------------------------------
-st.subheader("Your Input")
-st.dataframe(input_df)
-
-# -------------------------------
 # Predictions
 # -------------------------------
-try:
-    future_price = reg.predict(input_df)[0]
-    good_investment = clf.predict(input_df)[0]
+future_price = reg.predict(input_df)[0]
+good_investment = clf.predict(input_df)[0]
 
-    st.subheader("Predictions")
-    st.success(f"Estimated Price in 5 years: {future_price:.2f} Lakhs")
-    st.info(f"Good Investment? {'YES ✅' if good_investment==1 else 'NO ❌'}")
-except Exception as e:
-    st.error(f"Prediction failed: {e}")
+st.subheader("Predictions")
+st.success(f"Estimated Price in 5 years: {future_price:.2f} Lakhs")
+st.info(f"Good Investment? {'YES ✅' if good_investment==1 else 'NO ❌'}")
