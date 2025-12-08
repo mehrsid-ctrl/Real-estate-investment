@@ -1,0 +1,19 @@
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+import joblib
+
+numeric_features = ["Price_in_Lakhs","Size_in_SqFt","BHK","Nearby_Schools","Nearby_Hospitals","Public_Transport_Accessibility","Price_per_SqFt","Age_of_Property","Price_per_BHK"]
+categorical_features = ["Furnished_Status","Property_Type","Facing","Owner_Type","Availability_Status","State","City","Locality"]
+
+preprocessor = ColumnTransformer(
+    transformers=[
+        ("num", StandardScaler(), numeric_features),
+        ("cat", OneHotEncoder(handle_unknown='ignore'), categorical_features)
+    ]
+)
+
+# Fit on training data
+preprocessor.fit(X_train)  # Use your training DataFrame
+
+# Save
+joblib.dump(preprocessor, "preprocessor.pkl")
