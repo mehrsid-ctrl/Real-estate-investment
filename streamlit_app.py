@@ -1,20 +1,41 @@
-# streamlit_app.py
+# STREAMLIT APP — REAL ESTATE ADVISOR
+# -------------------------------
 import streamlit as st
 import pandas as pd
+import os
 from catboost import CatBoostRegressor, CatBoostClassifier
 import joblib
 
 st.title("🏠 Real Estate Investment Advisor")
 
 # -------------------------------
-# Load models from repo folder
+# Detect model paths automatically
+# -------------------------------
+possible_paths = ["models", "."]  # first check models folder, then root
+reg_model_path = None
+clf_model_path = None
+preprocessor_path = None
+
+for p in possible_paths:
+    if os.path.exists(os.path.join(p, "reg_model.cbm")):
+        reg_model_path = os.path.join(p, "reg_model.cbm")
+    if os.path.exists(os.path.join(p, "clf_model.cbm")):
+        clf_model_path = os.path.join(p, "clf_model.cbm")
+    if os.path.exists(os.path.join(p, "preprocessor.pkl")):
+        preprocessor_path = os.path.join(p, "preprocessor.pkl")
+
+if not reg_model_path or not clf_model_path:
+    st.error("❌ Could not find model files. Make sure reg_model.cbm and clf_model.cbm are in the repo root or models/ folder.")
+    st.stop()
+
+# -------------------------------
+# Load models
 # -------------------------------
 try:
     reg = CatBoostRegressor()
     clf = CatBoostClassifier()
-    reg.load_model("models/reg_model.cbm")
-    clf.load_model("models/clf_model.cbm")
-    preprocessor = joblib.load("models/preprocessor.pkl")
+    reg.load_model(reg_model_path)
+    clf.load_model(clf_model_path)
     st.success("✅ Models loaded successfully!")
 except Exception as e:
     st.error(f"Failed to load models: {e}")
@@ -63,21 +84,10 @@ input_df = pd.DataFrame([{
     "Price_per_BHK": price / max(bhk, 1)
 }])
 
-# -------------------------------
-# Ensure categorical values match training
-# -------------------------------
+# Convert categorical columns to string
 cat_cols = ["Furnished_Status","Property_Type","Facing","Owner_Type","Availability_Status",
             "State","City","Locality"]
-
-# Map unseen categories to "Unknown"
-valid_values = {
-    col: preprocessor[col] if col in preprocessor else None
-    for col in cat_cols
-}
-
 for col in cat_cols:
-    if valid_values[col] is not None and input_df[col][0] not in valid_values[col]:
-        input_df[col][0] = "Unknown"
     input_df[col] = input_df[col].astype(str)
 
 # -------------------------------
