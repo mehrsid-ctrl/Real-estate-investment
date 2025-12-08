@@ -1,34 +1,32 @@
-# STREAMLIT APP — REAL ESTATE ADVISOR
-# -------------------------------
+# streamlit_app.py — Real Estate Investment Advisor
+
 import streamlit as st
 import pandas as pd
+import numpy as np
+import joblib
 from catboost import CatBoostRegressor, CatBoostClassifier
-import os
 
+st.set_page_config(page_title="🏠 Real Estate Investment Advisor", layout="centered")
 st.title("🏠 Real Estate Investment Advisor")
 
 # -------------------------------
-# Load models from repo
+# Load models and preprocessor
 # -------------------------------
+MODEL_PATH = "models/"
 try:
-    # If you moved models to a 'models/' folder in repo, uncomment the next lines
-    # MODEL_PATH = "models/"
-    # reg = CatBoostRegressor()
-    # clf = CatBoostClassifier()
-    # reg.load_model(os.path.join(MODEL_PATH, "reg_model.cbm"))
-    # clf.load_model(os.path.join(MODEL_PATH, "clf_model.cbm"))
-
-    # If models are in repo root
     reg = CatBoostRegressor()
     clf = CatBoostClassifier()
-    reg.load_model("reg_model.cbm")
-    clf.load_model("clf_model.cbm")
+    reg.load_model(f"{MODEL_PATH}reg_model.cbm")
+    clf.load_model(f"{MODEL_PATH}clf_model.cbm")
 
-    st.success("✅ Models loaded successfully!")
+    preproc_data = joblib.load(f"{MODEL_PATH}preprocessor.pkl")
+    cat_cols = preproc_data['cat_cols']
+    num_cols = preproc_data['num_cols']
 
+    st.success("✅ Models and preprocessor loaded successfully!")
 except Exception as e:
     st.error(f"Failed to load models: {e}")
-    st.stop()  # Stop execution if models not found
+    st.stop()
 
 # -------------------------------
 # User input
@@ -70,22 +68,28 @@ input_df = pd.DataFrame([{
     "Locality": locality,
     # Derived features
     "Price_per_SqFt": (price*100000)/size,
-    "Age_of_Property": 5,  # placeholder
+    "Age_of_Property": 5,
     "Price_per_BHK": price / max(bhk, 1)
 }])
 
 # Convert categorical columns to string
-cat_cols = ["Furnished_Status","Property_Type","Facing","Owner_Type","Availability_Status",
-            "State","City","Locality"]
 for col in cat_cols:
     input_df[col] = input_df[col].astype(str)
+    # Replace unseen categories with 'Unknown'
+    known_cats = preproc_data['preprocessor'].categories_[cat_cols.index(col)]
+    if input_df[col][0] not in known_cats:
+        input_df[col] = "Unknown"
 
 # -------------------------------
 # Predictions
 # -------------------------------
-future_price = reg.predict(input_df)[0]
-good_investment = clf.predict(input_df)[0]
+try:
+    future_price = reg.predict(input_df)[0]
+    good_investment = clf.predict(input_df)[0]
 
-st.subheader("Predictions")
-st.success(f"Estimated Price in 5 years: {future_price:.2f} Lakhs")
-st.info(f"Good Investment? {'YES ✅' if good_investment==1 else 'NO ❌'}")
+    st.subheader("Predictions")
+    st.success(f"Estimated Price in 5 years: {future_price:.2f} Lakhs")
+    st.info(f"Good Investment? {'YES ✅' if good_investment==1 else 'NO ❌'}")
+
+except Exception as e:
+    st.error(f"Prediction failed: {e}")
