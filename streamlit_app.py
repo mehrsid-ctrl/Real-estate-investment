@@ -1,36 +1,39 @@
-# streamlit_app.py
+# STREAMLIT APP — REAL ESTATE ADVISOR
 # -------------------------------
 import streamlit as st
 import pandas as pd
 from catboost import CatBoostRegressor, CatBoostClassifier
+import os
 
-st.set_page_config(page_title="🏠 Real Estate Investment Advisor", layout="centered")
 st.title("🏠 Real Estate Investment Advisor")
 
 # -------------------------------
-# Load models directly from repo
+# Load models from repo
 # -------------------------------
-MODEL_PATH_REG = "models/reg_model.cbm"
-MODEL_PATH_CLF = "models/clf_model.cbm"
-
 try:
-    reg = CatBoostRegressor()
-    reg.load_model(MODEL_PATH_REG)
+    # If you moved models to a 'models/' folder in repo, uncomment the next lines
+    # MODEL_PATH = "models/"
+    # reg = CatBoostRegressor()
+    # clf = CatBoostClassifier()
+    # reg.load_model(os.path.join(MODEL_PATH, "reg_model.cbm"))
+    # clf.load_model(os.path.join(MODEL_PATH, "clf_model.cbm"))
 
+    # If models are in repo root
+    reg = CatBoostRegressor()
     clf = CatBoostClassifier()
-    clf.load_model(MODEL_PATH_CLF)
+    reg.load_model("reg_model.cbm")
+    clf.load_model("clf_model.cbm")
 
     st.success("✅ Models loaded successfully!")
 
 except Exception as e:
     st.error(f"Failed to load models: {e}")
-    st.stop()
+    st.stop()  # Stop execution if models not found
 
 # -------------------------------
 # User input
 # -------------------------------
 st.subheader("Property Information")
-
 price = st.number_input("Current Price (Lakhs)", min_value=1.0, max_value=100000.0, value=50.0)
 size = st.number_input("Size (sq ft)", min_value=100, max_value=20000, value=1000)
 bhk = st.number_input("BHK", min_value=1, max_value=10, value=2)
