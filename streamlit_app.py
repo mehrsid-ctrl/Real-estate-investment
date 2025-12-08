@@ -93,13 +93,6 @@ for col in cat_cols:
 # -------------------------------
 # Predictions
 # -------------------------------
-import joblib
-
-preprocessor_data = joblib.load("preprocessor.pkl")
-preprocessor = preprocessor_data['preprocessor']
-num_cols = preprocessor_data['num_cols']
-cat_cols = preprocessor_data['cat_cols']
-
 try:
     future_price = reg.predict(input_df)[0]
     good_investment = clf.predict(input_df)[0]
