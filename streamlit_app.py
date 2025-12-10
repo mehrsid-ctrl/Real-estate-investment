@@ -27,11 +27,13 @@ bhk = st.number_input("BHK", 1, 10, 2)
 schools = st.number_input("Nearby Schools", 0, 20, 2)
 hosp = st.number_input("Nearby Hospitals", 0, 20, 1)
 pt = st.slider("Transport Accessibility", 1, 10, 5)
+
 furn = st.selectbox("Furnished Status", ["Unfurnished", "Semi", "Fully", "Unknown"])
 ptype = st.selectbox("Property Type", ["Apartment", "House", "Villa", "Unknown"])
 face = st.selectbox("Facing", ["North", "South", "East", "West", "Unknown"])
 owner = st.selectbox("Owner Type", ["Builder", "Agent", "Individual", "Unknown"])
 av = st.selectbox("Availability Status", ["Available", "Sold", "Under Construction", "Unknown"])
+
 state = st.text_input("State", "Unknown")
 city = st.text_input("City", "Unknown")
 locality = st.text_input("Locality", "Unknown")
@@ -54,16 +56,21 @@ input_df = pd.DataFrame([{
     "State": state,
     "City": city,
     "Locality": locality,
-    "Price_per_SqFt": (price*100000)/size,
+    "Price_per_SqFt": (price * 100000) / size,
     "Age_of_Property": 5,
     "Price_per_BHK": price / max(bhk, 1)
 }])
 
-# Convert categorical columns to string
-cat_cols = ["Furnished_Status","Property_Type","Facing","Owner_Type","Availability_Status",
-            "State","City","Locality"]
+# -------------------------------
+# FIX: Correct categorical dtype for CatBoost
+# -------------------------------
+cat_cols = [
+    "Furnished_Status", "Property_Type", "Facing", "Owner_Type",
+    "Availability_Status", "State", "City", "Locality"
+]
+
 for col in cat_cols:
-    input_df[col] = input_df[col].astype(str)
+    input_df[col] = input_df[col].astype("category")
 
 # -------------------------------
 # Predictions
@@ -75,5 +82,6 @@ try:
     st.subheader("Predictions")
     st.success(f"Estimated Price in 5 years: {future_price:.2f} Lakhs")
     st.info(f"Good Investment? {'YES ✅' if good_investment==1 else 'NO ❌'}")
+
 except Exception as e:
     st.error(f"Prediction failed: {e}")
