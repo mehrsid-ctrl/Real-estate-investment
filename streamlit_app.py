@@ -72,7 +72,28 @@ cat_cols = [
 for col in cat_cols:
     input_df[col] = input_df[col].astype("category")
 
-# -------------------------------
+correct_order = [
+    "Price_in_Lakhs",
+    "Size_in_SqFt",
+    "BHK",
+    "Price_per_SqFt",
+    "Price_per_BHK",
+    "Nearby_Schools",
+    "Nearby_Hospitals",
+    "Public_Transport_Accessibility",
+    "Furnished_Status",
+    "Property_Type",
+    "Facing",
+    "Owner_Type",
+    "Availability_Status",
+    "State",
+    "City",
+    "Locality",
+    "Age_of_Property"
+]
+
+input_df = input_df[correct_order]
+
 # Predictions
 # -------------------------------
 try:
